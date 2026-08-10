@@ -1,0 +1,153 @@
+import 'dart:convert';
+
+import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
+
+import '../services/auth_service.dart';
+
+class AuthRoutes {
+  final AuthService _authService;
+
+  AuthRoutes({
+    AuthService? authService,
+  }) : _authService =
+            authService ?? AuthService();
+
+  Router get router {
+    final router = Router();
+
+    router.post('/register', _register);
+    router.post('/login', _login);
+
+    return router;
+  }
+
+  Future<Response> _register(
+    Request request,
+  ) async {
+    try {
+      final body = jsonDecode(
+        await request.readAsString(),
+      ) as Map<String, dynamic>;
+
+      final name = body['name'] as String?;
+      final email = body['email'] as String?;
+      final password = body['password'] as String?;
+
+      if (name == null ||
+          email == null ||
+          password == null ||
+          name.trim().isEmpty ||
+          email.trim().isEmpty ||
+          password.isEmpty) {
+        return _jsonResponse(
+          400,
+          {
+            'message':
+                'Name, email, and password are required.',
+          },
+        );
+      }
+
+      final user =
+          await _authService.register(
+        name: name,
+        email: email,
+        password: password,
+      );
+
+      return _jsonResponse(
+        201,
+        {
+          'message': 'Registration successful.',
+          'user': {
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'createdAt':
+                user.createdAt?.toIso8601String(),
+          },
+        },
+      );
+    } catch (e) {
+      return _jsonResponse(
+        400,
+        {
+          'message':
+              e.toString().replaceFirst(
+                    'Exception: ',
+                    '',
+                  ),
+        },
+      );
+    }
+  }
+
+  Future<Response> _login(
+    Request request,
+  ) async {
+    try {
+      final body = jsonDecode(
+        await request.readAsString(),
+      ) as Map<String, dynamic>;
+
+      final email = body['email'] as String?;
+      final password = body['password'] as String?;
+
+      if (email == null ||
+          password == null ||
+          email.trim().isEmpty ||
+          password.isEmpty) {
+        return _jsonResponse(
+          400,
+          {
+            'message':
+                'Email and password are required.',
+          },
+        );
+      }
+
+      final user =
+          await _authService.login(
+        email: email,
+        password: password,
+      );
+
+      return _jsonResponse(
+        200,
+        {
+          'message': 'Login successful.',
+          'user': {
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+          },
+        },
+      );
+    } catch (e) {
+      return _jsonResponse(
+        401,
+        {
+          'message':
+              e.toString().replaceFirst(
+                    'Exception: ',
+                    '',
+                  ),
+        },
+      );
+    }
+  }
+
+  Response _jsonResponse(
+    int statusCode,
+    Map<String, dynamic> body,
+  ) {
+    return Response(
+      statusCode,
+      body: jsonEncode(body),
+      headers: {
+        'content-type': 'application/json',
+      },
+    );
+  }
+}
