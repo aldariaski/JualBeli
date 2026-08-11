@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../data/auth_storage.dart';
 
-import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_logo.dart';
-import '../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_logo.dart';
+import '../../../../shared/widgets/app_text_field.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../../../app/router.dart';
@@ -48,12 +48,15 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final authService = AuthService();
 
-      await authService.login(
+      final response = await authService.login(
         email: email,
         password: password,
       );
+      final user = response['user'];
 
       await AuthStorage.setLoggedIn(true);
+
+      await AuthStorage.saveUser( id: user['id'], name: user['name'], email: user['email'], );
 
 
 

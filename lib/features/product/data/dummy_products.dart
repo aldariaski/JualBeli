@@ -1,5 +1,5 @@
 
-class Product {
+class ProductOld {
   final String name;
   final double price;
   final String image;
@@ -28,7 +28,7 @@ class Product {
     'Other',
   ];
 
-  const Product({
+  const ProductOld({
     required this.name,
     required this.price,
     required this.image,
@@ -37,19 +37,19 @@ class Product {
 }
 
 const products = [
-  Product(
+  ProductOld(
     name: 'iPhone 16',
     price: 15999000,
     image: 'https://picsum.photos/200?1',
     category: 'Electronics',
   ),
-  Product(
+  ProductOld(
     name: 'AirPods Pro',
     price: 3999000,
     image: 'https://picsum.photos/200?2',
     category: 'Electronics',
   ),
-  Product(
+  ProductOld(
     name: 'MacBook Air',
     price: 18999000,
     image: 'https://picsum.photos/200?3',

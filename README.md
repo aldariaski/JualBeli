@@ -266,8 +266,8 @@ For production, a properly trusted SQL Server certificate should be used instead
 * [x] Login UI
 * [x] Register UI
 * [x] Home UI
-* [ ] Connect Login UI to backend
-* [ ] Connect Register UI to backend
+* [x] Connect Login UI to backend
+* [x] Connect Register UI to backend
 * [ ] Product list
 * [ ] Product details
 * [ ] Cart

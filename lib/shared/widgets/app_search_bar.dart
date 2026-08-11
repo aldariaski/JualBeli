@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_logo.dart';
-import '../../auth/data/auth_storage.dart';
-import '../../../app/router.dart';
+import '../../features/auth/data/auth_storage.dart';
+import '../../app/router.dart';
 import 'package:go_router/go_router.dart';
 
 class AppSearchBar extends StatelessWidget {
@@ -49,23 +49,27 @@ class AppSearchBar extends StatelessWidget {
           
 
           IconButton(
-            onPressed: () {},
+            onPressed: () {context.push('/cart');},
             icon: const Icon(
               Icons.shopping_cart_outlined,
               size: 24,
             ),
           ),
 
-          FutureBuilder<String?>( 
-            future: AuthStorage.getCurrentUserName(), 
-            builder: (context, snapshot) { 
-              final userName = snapshot.data ?? 'User'; 
-              return Padding( padding: 
-              const EdgeInsets.symmetric(horizontal: 8), 
-              child: Text( userName, 
-                ), 
-              ); 
-            }, 
+          FutureBuilder<String?>(
+            future: AuthStorage.getCurrentUserName(),
+            builder: (context, snapshot) {
+              print('Username: ${snapshot.data}');
+              print('Error: ${snapshot.error}');
+              print('Connection: ${snapshot.connectionState}');
+
+              final userName = snapshot.data ?? 'User (Hi)';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(userName),
+              );
+            },
           ),
 
           IconButton(

@@ -9,6 +9,9 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:jualbeli_backend/config/database_config.dart';
 import 'package:jualbeli_backend/database/database.dart';
 import 'package:jualbeli_backend/routes/auth_routes.dart';
+import 'package:jualbeli_backend/routes/product_routes.dart';
+import 'package:jualbeli_backend/routes/cart_routes.dart';
+
 
 Future<void> main() async {
   final database = DatabaseConnection.instance;
@@ -32,6 +35,16 @@ Future<void> main() async {
   router.mount(
     '/auth/',
     AuthRoutes().router.call,
+  );
+  
+   router.mount(
+    '/products/',
+    ProductRoutes().router.call,
+  );
+
+  router.mount(
+    '/cart/',
+    CartRoutes().router.call,
   );
 
   final handler = const Pipeline()

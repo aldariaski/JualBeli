@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../product/data/dummy_products.dart';
+import '../../../product/data/product_model.dart';
 import '../../../product/data/price_formatter.dart';
+import '../../../product/presentation/pages/product_detail_page.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -16,7 +17,17 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap ??
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductDetailPage(
+                  product: product,
+                ),
+              ),
+            );
+          },
       child: Container(
         width: 180,
         decoration: BoxDecoration(
@@ -33,12 +44,22 @@ class ProductCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  product.image,
-                  width: double.infinity,
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
+                child: product.image != null &&
+                        product.image!.isNotEmpty
+                    ? Image.network(
+                        product.image!,
+                        width: double.infinity,
+                        height: 150,
+                        fit: BoxFit.cover,
+                      )
+                    : const SizedBox(
+                        width: double.infinity,
+                        height: 150,
+                        child: Icon(
+                          Icons.image,
+                          size: 60,
+                        ),
+                      ),
               ),
 
               const SizedBox(height: 12),
@@ -56,7 +77,7 @@ class ProductCard extends StatelessWidget {
               const SizedBox(height: 6),
 
               Text(
-                '${formatPrice(product.price)}',
+                formatPrice(product.price),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,

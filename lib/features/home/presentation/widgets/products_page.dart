@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/product_card.dart';
+import '../../../product/data/product_model.dart';
 import '../../../product/data/dummy_products.dart';
 
 class ProductsPage extends StatelessWidget {

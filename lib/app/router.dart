@@ -5,6 +5,7 @@ import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/cart/presentation/pages/cart_page.dart';
 
 class AppRouter {
   AppRouter._();
@@ -32,6 +33,10 @@ class AppRouter {
         path: home,
         builder: (context, state) => const HomePage(),
       ),
+      GoRoute(
+      path: '/cart',
+      builder: (context, state) => const CartPage(),
+    ),
     ],
   );
 }

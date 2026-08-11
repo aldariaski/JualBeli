@@ -13,7 +13,29 @@ class Categories extends StatelessWidget {
   final String selectedCategory;
   final ValueChanged<String> onCategorySelected;
 
-  static const shopCategories = Product.shopCategories;
+  //static const shopCategories = Product.shopCategories;
+  static const shopCategories = [
+    'All',
+    'Electronics',
+    'Fashion',
+    'Shoes',
+    'Beauty',
+    'Health',
+    'Home & Living',
+    'Furniture',
+    'Sports',
+    'Toys',
+    'Books',
+    'Food & Beverages',
+    'Automotive',
+    'Accessories',
+    'Pet Supplies',
+    'Baby & Kids',
+    'Groceries',
+    'Office & Stationery',
+    'Tools & Hardware',
+    'Other',
+  ];
 
   @override
   Widget build(BuildContext context) {

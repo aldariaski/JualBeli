@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_logo.dart';
-import '../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_logo.dart';
+import '../../../../shared/widgets/app_text_field.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/router.dart';
 import '../../data/auth_service.dart';

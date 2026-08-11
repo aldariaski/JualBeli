@@ -22,7 +22,8 @@ class AuthStorage {
 
   static Future<void> setLoggedIn(bool value) async { 
     final prefs = await SharedPreferences.getInstance(); 
-    await prefs.setBool(_loggedInKey, value); }
+    await prefs.setBool(_loggedInKey, value); 
+    }
 
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();

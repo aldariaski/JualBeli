@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'app/app.dart';
+import 'services/backend_process.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  BackendProcess.start();
 
   runApp(const JualBeliApp());
 }

@@ -1,33 +1,61 @@
 import 'package:flutter/material.dart';
 
-import '../../../shared/widgets/app_search_bar.dart';
+import '../../../../shared/widgets/app_search_bar.dart';
+
+import '../../../product/data/product_api_service.dart';
+import '../../../product/data/product_model.dart';
 
 import '../widgets/categories.dart';
-import '../widgets/section_title.dart';
-import '../../../product/data/dummy_products.dart';
-
 import '../widgets/products_page.dart';
+import '../widgets/section_title.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({
+    super.key,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  final ProductApiService _productApiService =
+      ProductApiService();
+
   String selectedCategory = 'All';
 
-  List<Product> get displayedProducts {
+  late Future<List<Product>> _productsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _productsFuture =
+        _productApiService.getProducts();
+  }
+
+  List<Product> filterProducts(
+    List<Product> products,
+  ) {
     if (selectedCategory == 'All') {
       return products;
     }
 
     return products
         .where(
-          (product) => product.category == selectedCategory,
+          (product) =>
+              product.category == selectedCategory,
         )
         .toList();
+  }
+
+  Future<void> _refreshProducts() async {
+    setState(() {
+      _productsFuture =
+          _productApiService.getProducts();
+    });
+
+    await _productsFuture;
   }
 
   @override
@@ -85,8 +113,59 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 12),
 
-                  ProductsPage(
-                    displayedProducts: displayedProducts,
+                  FutureBuilder<List<Product>>(
+                    future: _productsFuture,
+                    builder: (
+                      context,
+                      snapshot,
+                    ) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const SizedBox(
+                          height: 240,
+                          child: Center(
+                            child:
+                                CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return SizedBox(
+                          height: 240,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Unable to load products.',
+                                ),
+                                const SizedBox(height: 12),
+                                ElevatedButton(
+                                  onPressed:
+                                      _refreshProducts,
+                                  child: const Text(
+                                    'Retry',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      final products =
+                          snapshot.data ?? [];
+
+                      final displayedProducts =
+                          filterProducts(products);
+
+                      return ProductsPage(
+                        displayedProducts:
+                            displayedProducts,
+                      );
+                    },
                   ),
                 ],
               ),
