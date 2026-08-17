@@ -68,7 +68,7 @@ class DatabaseConnection {
         user: _username!,
         password: _password!,
         database: _databaseName!,
-        encrypt: true,
+        encrypt: false,
         trustServerCertificate: true,
         timeout: const Duration(seconds: 30),
       );
@@ -192,6 +192,43 @@ class DatabaseConnection {
       }
     });
   }
+
+      Future<T> transaction<T>(
+      Future<T> Function(MssqlConnection connection) operation,
+    ) async {
+      return _withLock(() async {
+        await _connect();
+
+        try {
+          await _connection!.beginTransaction();
+
+          try {
+            final result =
+                await operation(_connection!);
+
+            await _connection!.commitTransaction();
+
+            return result;
+          } catch (e) {
+            try {
+              await _connection!.rollbackTransaction();
+            } catch (rollbackError) {
+              print(
+                'Database rollback failed: $rollbackError',
+              );
+            }
+
+            rethrow;
+          }
+        } catch (e) {
+          print(
+            'Database transaction failed: $e',
+          );
+
+          rethrow;
+        }
+      });
+    }
 
   Future<void> close() async {
     final connection =

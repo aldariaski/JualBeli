@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CategoryChip extends StatelessWidget {
+class CategoryChip extends StatefulWidget {
   const CategoryChip({
     super.key,
     required this.label,
@@ -13,12 +13,17 @@ class CategoryChip extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<CategoryChip> createState() => _CategoryChipState();
+}
+
+class _CategoryChipState extends State<CategoryChip> {
+  @override
   Widget build(BuildContext context) {
     return ChoiceChip(
-      label: Text(label),
-      selected: selected,
+      label: Text(widget.label),
+      selected: widget.selected,
       onSelected: (_) {
-        onTap?.call();
+        widget.onTap?.call();
       },
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
@@ -26,9 +31,12 @@ class CategoryChip extends StatelessWidget {
       ),
       labelStyle: TextStyle(
         fontWeight: FontWeight.w500,
-        color: selected ? Colors.white : Colors.black87,
+        color: widget.selected
+            ? Colors.white
+            : Colors.black87,
       ),
-      selectedColor: Theme.of(context).primaryColor,
+      selectedColor:
+          Theme.of(context).primaryColor,
       backgroundColor: Colors.grey.shade100,
       side: BorderSide.none,
       shape: RoundedRectangleBorder(

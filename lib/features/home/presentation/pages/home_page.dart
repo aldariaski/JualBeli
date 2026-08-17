@@ -9,6 +9,9 @@ import '../widgets/categories.dart';
 import '../widgets/products_page.dart';
 import '../widgets/section_title.dart';
 
+import '../../../../app/router.dart';
+import 'package:go_router/go_router.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
@@ -17,6 +20,61 @@ class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
+
+  class _HomeActionButton extends StatelessWidget {
+    final IconData icon;
+    final String label;
+    final VoidCallback onTap;
+
+    const _HomeActionButton({
+      required this.icon,
+      required this.label,
+      required this.onTap,
+    });
+
+    @override
+    Widget build(BuildContext context) {
+      final colorScheme = Theme.of(context).colorScheme;
+
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 4,
+            horizontal: 4,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  size: 23,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
 
 class _HomePageState extends State<HomePage> {
   final ProductApiService _productApiService =
@@ -64,7 +122,7 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: ListView(
           children: [
-            const AppSearchBar(),
+            AppSearchBar(onProductPageReturned: _refreshProducts),
 
             Padding(
               padding: const EdgeInsets.all(20),
@@ -167,6 +225,59 @@ class _HomePageState extends State<HomePage> {
                       );
                     },
                   ),
+
+                  Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.green.shade100,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _HomeActionButton(
+                            icon: Icons.shopping_cart_outlined,
+                            label: 'Cart',
+                            onTap: () {
+                              context.push('/cart');
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _HomeActionButton(
+                            icon: Icons.receipt_long_outlined,
+                            label: 'Orders',
+                            onTap: () {
+                              context.push('/orders');
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _HomeActionButton(
+                            icon: Icons.add_box_outlined,
+                            label: 'Add Product',
+                            onTap: () async {
+                              final result = await context.push('/products/add');
+
+                              if (result == true) {
+                                await _refreshProducts();
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 ],
               ),
             ),

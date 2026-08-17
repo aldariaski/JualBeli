@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'product_model.dart';
+import '../../auth/data/auth_storage.dart';
 
 class ProductApiService {
   static const String baseUrl = 'http://localhost:8080';
@@ -39,6 +40,43 @@ class ProductApiService {
     if (response.statusCode != 200) {
       throw Exception(
         'Failed to load product: ${response.statusCode}',
+      );
+    }
+
+    final data = jsonDecode(response.body);
+
+    return Product.fromJson(
+      Map<String, dynamic>.from(data['product']),
+    );
+  }
+
+    Future<Product> createProduct({
+    required String name,
+    required double price,
+    String? image,
+    required String category,
+    required String sellerEmail,
+    required String sellerName,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/products/'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': name,
+        'price': price,
+        'image': image,
+        'category': category,
+        'sellerEmail': sellerEmail,
+        'sellerName': sellerName,
+      }),
+    );
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception(
+        'Failed to create product: '
+        '${response.statusCode} ${response.body}',
       );
     }
 

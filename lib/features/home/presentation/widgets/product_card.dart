@@ -4,7 +4,7 @@ import '../../../product/data/product_model.dart';
 import '../../../product/data/price_formatter.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
   const ProductCard({
     super.key,
     required this.product,
@@ -15,15 +15,20 @@ class ProductCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<ProductCard> {
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap ??
+      onTap: widget.onTap ??
           () {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => ProductDetailPage(
-                  product: product,
+                  product: widget.product,
                 ),
               ),
             );
@@ -40,14 +45,16 @@ class ProductCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: product.image != null &&
-                        product.image!.isNotEmpty
+                borderRadius:
+                    BorderRadius.circular(12),
+                child: widget.product.image != null &&
+                        widget.product.image!.isNotEmpty
                     ? Image.network(
-                        product.image!,
+                        widget.product.image!,
                         width: double.infinity,
                         height: 150,
                         fit: BoxFit.cover,
@@ -65,7 +72,7 @@ class ProductCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               Text(
-                product.name,
+                widget.product.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -77,7 +84,7 @@ class ProductCard extends StatelessWidget {
               const SizedBox(height: 6),
 
               Text(
-                formatPrice(product.price),
+                formatPrice(widget.product.price),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,

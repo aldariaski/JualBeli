@@ -17,10 +17,44 @@ class ProductRoutes {
   Router get router {
     final router = Router();
 
+    router.post('/', _createProduct);
     router.get('/', _getProducts);
     router.get('/<id|[0-9]+>', _getProduct);
 
     return router;
+  }
+
+    Future<Response> _createProduct(
+    Request request,
+  ) async {
+    try {
+      final body = jsonDecode(await request.readAsString());
+
+      final product = await _productService.createProduct(
+        name: body['name'],
+        price: (body['price'] as num).toDouble(),
+        image: body['image'],
+        category: body['category'],
+        sellerEmail: body['sellerEmail'],
+        sellerName: body['sellerName'],
+      );
+
+      return _jsonResponse(
+        201,
+        {
+          'message': 'Product created successfully.',
+          'product': product.toMap(),
+        },
+      );
+    } catch (e) {
+      return _jsonResponse(
+        500,
+        {
+          'message': 'Failed to create product.',
+          'error': e.toString(),
+        },
+      );
+    }
   }
 
   Future<Response> _getProducts(

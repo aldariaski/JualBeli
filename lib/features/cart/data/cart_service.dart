@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -12,118 +13,172 @@ class CartService {
 
   static const String baseUrl = 'http://localhost:8080';
 
+  // SERIALIZE CART REQUESTS
+  
+  // This makes sure only one cart HTTP request is active at a
+  // time. It protects the backend when + / - / refresh operations
+  // happen very quickly.
+
+  Future<void> _requestLock = Future.value();
+
+  Future<T> _withLock<T>(
+    Future<T> Function() operation,
+  ) {
+    final previous = _requestLock;
+
+    final completer = Completer<void>();
+
+    _requestLock = completer.future;
+
+    return previous.then((_) async {
+      try {
+        return await operation();
+      } finally {
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      }
+    });
+  }
+
+  // GET CART
+
   Future<List<CartItem>> getCart(
     String email,
-  ) async {
-    final uri = Uri.parse(
-      '$baseUrl/cart/'
-      '?email=${Uri.encodeQueryComponent(email)}',
-    );
-
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to load cart: '
-        '${response.statusCode} '
-        '${response.body}',
+  ) {
+    return _withLock(() async {
+      final uri = Uri.parse(
+        '$baseUrl/cart/'
+        '?email=${Uri.encodeQueryComponent(email)}',
       );
-    }
 
-    final data = jsonDecode(response.body);
-
-    if (data is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid cart response.',
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       );
-    }
 
-    final items = data['items'];
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to load cart: '
+          '${response.statusCode} '
+          '${response.body}',
+        );
+      }
 
-    if (items is! List) {
-      return [];
-    }
+      final data = jsonDecode(response.body);
 
-    return items
-        .map(
-          (item) => CartItem.fromJson(
-            Map<String, dynamic>.from(item),
-          ),
-        )
-        .toList();
+      if (data is! Map<String, dynamic>) {
+        throw Exception(
+          'Invalid cart response.',
+        );
+      }
+
+      final items = data['items'];
+
+      if (items is! List) {
+        return <CartItem>[];
+      }
+
+      return items
+          .map(
+            (item) => CartItem.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          )
+          .toList();
+    });
   }
+
+  // ADD PRODUCT
 
   Future<void> addProduct(
     String email,
     Product product,
-  ) async {
-    final uri = Uri.parse(
-      '$baseUrl/cart/',
-    );
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'email': email,
-        'productId': product.id,
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to add product to cart: '
-        '${response.statusCode} '
-        '${response.body}',
+  ) {
+    return _withLock(() async {
+      final uri = Uri.parse(
+        '$baseUrl/cart/',
       );
-    }
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'productId': product.id,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to add product to cart: '
+          '${response.statusCode} '
+          '${response.body}',
+        );
+      }
+    });
   }
+
+  // UPDATE QUANTITY
 
   Future<void> updateQuantity(
     String email,
     int productId,
     int quantity,
-  ) async {
-    if (quantity <= 0) {
-      await removeProduct(
+  ) {
+    return _withLock(() async {
+      if (quantity <= 0) {
+        await _removeProductInternal(
+          email,
+          productId,
+        );
+        return;
+      }
+
+      final uri = Uri.parse(
+        '$baseUrl/cart/$productId',
+      );
+
+      final response = await http.put(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'quantity': quantity,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to update cart: '
+          '${response.statusCode} '
+          '${response.body}',
+        );
+      }
+    });
+  }
+
+  // REMOVE PRODUCT
+
+  Future<void> removeProduct(
+    String email,
+    int productId,
+  ) {
+    return _withLock(() async {
+      await _removeProductInternal(
         email,
         productId,
       );
-      return;
-    }
-
-    final uri = Uri.parse(
-      '$baseUrl/cart/$productId',
-    );
-
-    final response = await http.put(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'email': email,
-        'quantity': quantity,
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to update cart: '
-        '${response.statusCode} '
-        '${response.body}',
-      );
-    }
+    });
   }
 
-  Future<void> removeProduct(
+  Future<void> _removeProductInternal(
     String email,
     int productId,
   ) async {
@@ -148,27 +203,31 @@ class CartService {
     }
   }
 
+  // CLEAR CART
+
   Future<void> clearCart(
     String email,
-  ) async {
-    final uri = Uri.parse(
-      '$baseUrl/cart/'
-      '?email=${Uri.encodeQueryComponent(email)}',
-    );
-
-    final response = await http.delete(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to clear cart: '
-        '${response.statusCode} '
-        '${response.body}',
+  ) {
+    return _withLock(() async {
+      final uri = Uri.parse(
+        '$baseUrl/cart/'
+        '?email=${Uri.encodeQueryComponent(email)}',
       );
-    }
+
+      final response = await http.delete(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to clear cart: '
+          '${response.statusCode} '
+          '${response.body}',
+        );
+      }
+    });
   }
 }

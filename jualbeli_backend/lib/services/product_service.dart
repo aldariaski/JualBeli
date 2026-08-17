@@ -22,4 +22,23 @@ class ProductService {
 
     return product;
   }
+
+
+Future<Product> createProduct({
+    required String name,
+    required double price,
+    String? image,
+    required String category,
+    required String sellerEmail,
+    required String sellerName,
+  }) {
+    return _productRepository.createProduct(
+      name: name,
+      price: price,
+      image: image,
+      category: category,
+      sellerEmail: sellerEmail,
+      sellerName: sellerName,
+    );
+  }
 }

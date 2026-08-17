@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'category_chip.dart';
-import '../../../product/data/dummy_products.dart';
 
-class Categories extends StatelessWidget {
+class Categories extends StatefulWidget {
   const Categories({
     super.key,
     required this.selectedCategory,
@@ -13,7 +12,6 @@ class Categories extends StatelessWidget {
   final String selectedCategory;
   final ValueChanged<String> onCategorySelected;
 
-  //static const shopCategories = Product.shopCategories;
   static const shopCategories = [
     'All',
     'Electronics',
@@ -38,23 +36,30 @@ class Categories extends StatelessWidget {
   ];
 
   @override
+  State<Categories> createState() => _CategoriesState();
+}
+
+class _CategoriesState extends State<Categories> {
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 45,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: shopCategories.length,
+        itemCount: Categories.shopCategories.length,
         separatorBuilder: (context, index) {
           return const SizedBox(width: 8);
         },
         itemBuilder: (context, index) {
-          final category = shopCategories[index];
+          final category =
+              Categories.shopCategories[index];
 
           return CategoryChip(
             label: category,
-            selected: selectedCategory == category,
+            selected:
+                widget.selectedCategory == category,
             onTap: () {
-              onCategorySelected(category);
+              widget.onCategorySelected(category);
             },
           );
         },

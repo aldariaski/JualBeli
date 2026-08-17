@@ -4,12 +4,49 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import 'package:window_manager/window_manager.dart';
 
 class BackendProcess {
   static Process? _process;
   static HttpServer? _mobileServer;
 
   static const int backendPort = 8080;
+
+  // ==============================================================
+  // WINDOW CLOSE HANDLER
+  // ==============================================================
+
+  static Future<void> initialize() async {
+    if (kIsWeb) {
+      return;
+    }
+
+    if (!(Platform.isWindows ||
+        Platform.isMacOS ||
+        Platform.isLinux)) {
+      return;
+    }
+
+    await windowManager.ensureInitialized();
+
+    windowManager.addListener(
+      _BackendWindowListener(),
+    );
+  }
+
+  static Future<void> _handleWindowClose() async {
+    print('[Backend] Flutter window is closing.');
+
+    await stop();
+
+    print('[Backend] Backend cleanup completed.');
+
+    await windowManager.destroy();
+  }
+
+  // ==============================================================
+  // START
+  // ==============================================================
 
   static Future<void> start() async {
     // ============================================================
@@ -249,5 +286,16 @@ class BackendProcess {
     }
 
     return 'http://localhost:$backendPort';
+  }
+}
+
+// ==============================================================
+// WINDOW LISTENER
+// ==============================================================
+
+class _BackendWindowListener extends WindowListener {
+  @override
+  Future<void> onWindowClose() async {
+    await BackendProcess._handleWindowClose();
   }
 }

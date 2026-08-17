@@ -6,7 +6,9 @@ import 'services/backend_process.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  BackendProcess.start();
+  await BackendProcess.initialize();
+
+  await BackendProcess.start();
 
   runApp(const JualBeliApp());
 }

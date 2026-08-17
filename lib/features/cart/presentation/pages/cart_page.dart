@@ -4,6 +4,7 @@ import '../../../auth/data/auth_storage.dart';
 import '../../data/cart_item.dart';
 import '../../data/cart_service.dart';
 import '../../../product/data/price_formatter.dart';
+import '../../../checkout/presentation/pages/checkout_page.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({
@@ -617,8 +618,11 @@ class _CartPageState extends State<CartPage> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // Checkout will be
-                          // implemented later.
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CheckoutPage(),
+                            ),
+                          );
                         },
                         child: const Text(
                           'Checkout',
