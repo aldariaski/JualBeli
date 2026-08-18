@@ -10,6 +10,8 @@ class BackendProcess {
   static Process? _process;
   static HttpServer? _mobileServer;
 
+  static bool _closing = false;
+
   static const int backendPort = 8080;
 
   // ==============================================================
@@ -29,17 +31,27 @@ class BackendProcess {
 
     await windowManager.ensureInitialized();
 
+    
     windowManager.addListener(
       _BackendWindowListener(),
     );
   }
 
   static Future<void> _handleWindowClose() async {
+    if (_closing) {
+      return;
+    }
+
+    _closing = true;
+
     print('[Backend] Flutter window is closing.');
 
     await stop();
 
     print('[Backend] Backend cleanup completed.');
+
+    // Allow the window to close now that cleanup is finished.
+    await windowManager.setPreventClose(false);
 
     await windowManager.destroy();
   }
@@ -51,7 +63,6 @@ class BackendProcess {
   static Future<void> start() async {
     // ============================================================
     // ANDROID / IOS
-    // Run a local HTTP backend inside the Flutter app.
     // ============================================================
 
     if (!kIsWeb &&
@@ -62,17 +73,17 @@ class BackendProcess {
 
     // ============================================================
     // WEB
-    // Browser cannot start a local Dart process.
     // ============================================================
 
     if (kIsWeb) {
-      print('[Backend] Web backend must already be running.');
+      print(
+        '[Backend] Web backend must already be running.',
+      );
       return;
     }
 
     // ============================================================
-    // WINDOWS / MACOS / LINUX
-    // Start your existing separate backend.
+    // DESKTOP
     // ============================================================
 
     if (!(Platform.isWindows ||
@@ -86,33 +97,72 @@ class BackendProcess {
       return;
     }
 
-    final projectDirectory = Directory.current;
+    // ============================================================
+    // FIND DIRECTORY WHERE FLUTTER EXE IS LOCATED
+    // ============================================================
 
-    final backendDirectory = Directory(
-      p.join(
-        projectDirectory.path,
-        'jualbeli_backend',
-      ),
+    final executableDirectory =
+        File(Platform.resolvedExecutable).parent.path;
+
+    print(
+      '[Backend] Executable directory:\n'
+      '$executableDirectory',
     );
 
-    if (!await backendDirectory.exists()) {
+    // ============================================================
+    // WINDOWS
+    //
+    // Expected:
+    //
+    // Release/
+    //   jualbeli.exe
+    //   jualbeli_backend.exe
+    // ============================================================
+
+    String backendExecutable;
+
+    if (Platform.isWindows) {
+      backendExecutable = p.join(
+        executableDirectory,
+        'jualbeli_backend.exe',
+      );
+    } else {
+      backendExecutable = p.join(
+        executableDirectory,
+        'jualbeli_backend',
+      );
+    }
+
+    final backendFile = File(backendExecutable);
+
+    if (!await backendFile.exists()) {
       throw Exception(
-        'jualbeli_backend not found:\n'
-        '${backendDirectory.path}',
+        'Backend executable not found:\n'
+        '$backendExecutable',
       );
     }
 
     print('[Backend] Starting...');
-    print('[Backend] ${backendDirectory.path}');
+    print('[Backend] $backendExecutable');
+
+    // ============================================================
+    // START COMPILED BACKEND
+    // ============================================================
 
     _process = await Process.start(
-      'dart',
-      ['run'],
-      workingDirectory: backendDirectory.path,
-      runInShell: true,
+      backendExecutable,
+      [],
+      workingDirectory: executableDirectory,
+      runInShell: false,
     );
 
-    print('[Backend] Started. PID: ${_process!.pid}');
+    print(
+      '[Backend] Started. PID: ${_process!.pid}',
+    );
+
+    // ============================================================
+    // BACKEND STDOUT
+    // ==============================================================
 
     _process!.stdout
         .transform(SystemEncoding().decoder)
@@ -120,16 +170,31 @@ class BackendProcess {
       stdout.write('[Backend] $data');
     });
 
+    // ============================================================
+    // BACKEND STDERR
+    // ==============================================================
+
     _process!.stderr
         .transform(SystemEncoding().decoder)
         .listen((data) {
       stderr.write('[Backend ERROR] $data');
     });
 
+    // ============================================================
+    // WATCH PROCESS
+    // ==============================================================
+
+    final process = _process;
+
     unawaited(
-      _process!.exitCode.then((exitCode) {
-        print('[Backend] Exited with code $exitCode');
-        _process = null;
+      process!.exitCode.then((exitCode) {
+        print(
+          '[Backend] Exited with code $exitCode',
+        );
+
+        if (_process == process) {
+          _process = null;
+        }
       }),
     );
   }
@@ -183,7 +248,6 @@ class BackendProcess {
       '[Backend] ${request.method} $path',
     );
 
-    // Health check
     if (path == '/api/health') {
       request.response
         ..statusCode = HttpStatus.ok
@@ -199,14 +263,14 @@ class BackendProcess {
       return;
     }
 
-    // Example endpoint
     if (path == '/api/test') {
       request.response
         ..statusCode = HttpStatus.ok
         ..headers.contentType = ContentType.json
         ..write(
           jsonEncode({
-            'message': 'JualBeli backend is running locally.',
+            'message':
+                'JualBeli backend is running locally.',
           }),
         );
 
@@ -214,7 +278,6 @@ class BackendProcess {
       return;
     }
 
-    // Not found
     request.response
       ..statusCode = HttpStatus.notFound
       ..headers.contentType = ContentType.json
@@ -232,7 +295,10 @@ class BackendProcess {
   // ==============================================================
 
   static Future<void> stop() async {
-    // Stop mobile backend
+    // ============================================================
+    // STOP MOBILE BACKEND
+    // ============================================================
+
     if (_mobileServer != null) {
       print('[Backend] Stopping mobile backend...');
 
@@ -243,33 +309,137 @@ class BackendProcess {
       print('[Backend] Mobile backend stopped.');
     }
 
-    // Stop desktop backend
+    // ============================================================
+    // STOP DESKTOP BACKEND
+    // ============================================================
+
     final process = _process;
 
     if (process == null) {
+      print('[Backend] No desktop backend process.');
       return;
     }
 
-    print('[Backend] Stopping desktop backend...');
+    final pid = process.pid;
+
+    print(
+      '[Backend] Stopping desktop backend '
+      '(PID $pid)...',
+    );
 
     if (Platform.isWindows) {
-      await Process.run(
-        'taskkill',
-        [
-          '/PID',
-          process.pid.toString(),
-          '/T',
-          '/F',
-        ],
-        runInShell: true,
-      );
+      try {
+        // Kill the exact backend process we started.
+        final pidResult = await Process.run(
+          'taskkill',
+          [
+            '/PID',
+            pid.toString(),
+            '/T',
+            '/F',
+          ],
+          runInShell: true,
+        );
+
+        print(
+          '[Backend] PID taskkill exit code: '
+          '${pidResult.exitCode}',
+        );
+
+        print(
+          '[Backend] PID taskkill stdout: '
+          '${pidResult.stdout}',
+        );
+
+        print(
+          '[Backend] PID taskkill stderr: '
+          '${pidResult.stderr}',
+        );
+
+        // Also kill any remaining jualbeli_backend.exe.
+        final nameResult = await Process.run(
+          'taskkill',
+          [
+            '/IM',
+            'jualbeli_backend.exe',
+            '/T',
+            '/F',
+          ],
+          runInShell: false,
+        );
+
+        print(
+          '[Backend] Name taskkill exit code: '
+          '${nameResult.exitCode}',
+        );
+
+        print(
+          '[Backend] Name taskkill stdout: '
+          '${nameResult.stdout}',
+        );
+
+        print(
+          '[Backend] Name taskkill stderr: '
+          '${nameResult.stderr}',
+        );
+      } catch (e) {
+        print(
+          '[Backend] Failed to kill backend: $e',
+        );
+      }
+
+      try {
+        final result = await Process.run(
+          'taskkill',
+          [
+            '/PID',
+            pid.toString(),
+            '/T',
+            '/F',
+          ],
+          runInShell: true,
+        );
+
+        print(
+          '[Backend] taskkill exit code: '
+          '${result.exitCode}',
+        );
+
+        print(
+          '[Backend] taskkill stdout: '
+          '${result.stdout}',
+        );
+
+        print(
+          '[Backend] taskkill stderr: '
+          '${result.stderr}',
+        );
+      } catch (e) {
+        print(
+          '[Backend] Failed to kill backend: $e',
+        );
+      }
     } else {
-      process.kill(ProcessSignal.sigterm);
+      try {
+        process.kill(
+          ProcessSignal.sigterm,
+        );
+      } catch (e) {
+        print(
+          '[Backend] Failed to stop backend: $e',
+        );
+      }
     }
+
+    // ============================================================
+    // CLEAR PROCESS REFERENCE
+    // ============================================================
 
     _process = null;
 
-    print('[Backend] Desktop backend stopped.');
+    print(
+      '[Backend] Desktop backend stopped.',
+    );
   }
 
   // ==============================================================
@@ -277,14 +447,6 @@ class BackendProcess {
   // ==============================================================
 
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:$backendPort';
-    }
-
-    if (Platform.isAndroid || Platform.isIOS) {
-      return 'http://localhost:$backendPort';
-    }
-
     return 'http://localhost:$backendPort';
   }
 }
@@ -296,6 +458,8 @@ class BackendProcess {
 class _BackendWindowListener extends WindowListener {
   @override
   Future<void> onWindowClose() async {
+    print('[Backend] WINDOW CLOSE EVENT');
+
     await BackendProcess._handleWindowClose();
   }
 }

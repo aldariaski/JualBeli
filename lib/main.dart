@@ -8,7 +8,7 @@ Future<void> main() async {
 
   await BackendProcess.initialize();
 
-  await BackendProcess.start();
+  BackendProcess.start();
 
   runApp(const JualBeliApp());
 }
