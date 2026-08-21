@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../auth/data/auth_storage.dart';
 import '../../product/data/product_model.dart';
 import 'cart_item.dart';
 
@@ -11,13 +12,12 @@ class CartService {
 
   static final CartService instance = CartService._();
 
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl =
+      'http://localhost:8080';
 
+  // ------------------------------------------------------------
   // SERIALIZE CART REQUESTS
-  
-  // This makes sure only one cart HTTP request is active at a
-  // time. It protects the backend when + / - / refresh operations
-  // happen very quickly.
+  // ------------------------------------------------------------
 
   Future<void> _requestLock = Future.value();
 
@@ -41,21 +41,45 @@ class CartService {
     });
   }
 
+  // ------------------------------------------------------------
+  // GET JWT TOKEN
+  // ------------------------------------------------------------
+
+  Future<String> _getToken() async {
+    final token =
+        await AuthStorage.getToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception(
+        'Authentication token not found.',
+      );
+    }
+
+    return token;
+  }
+
+  // ------------------------------------------------------------
   // GET CART
+  // ------------------------------------------------------------
 
   Future<List<CartItem>> getCart(
     String email,
   ) {
     return _withLock(() async {
+      final token =
+          await _getToken();
+
       final uri = Uri.parse(
-        '$baseUrl/cart/'
-        '?email=${Uri.encodeQueryComponent(email)}',
+        '$baseUrl/cart/',
       );
 
       final response = await http.get(
         uri,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+              'application/json',
+          'Authorization':
+              'Bearer $token',
         },
       );
 
@@ -67,7 +91,8 @@ class CartService {
         );
       }
 
-      final data = jsonDecode(response.body);
+      final data =
+          jsonDecode(response.body);
 
       if (data is! Map<String, dynamic>) {
         throw Exception(
@@ -91,13 +116,18 @@ class CartService {
     });
   }
 
+  // ------------------------------------------------------------
   // ADD PRODUCT
+  // ------------------------------------------------------------
 
   Future<void> addProduct(
     String email,
     Product product,
   ) {
     return _withLock(() async {
+      final token =
+          await _getToken();
+
       final uri = Uri.parse(
         '$baseUrl/cart/',
       );
@@ -105,10 +135,12 @@ class CartService {
       final response = await http.post(
         uri,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+              'application/json',
+          'Authorization':
+              'Bearer $token',
         },
         body: jsonEncode({
-          'email': email,
           'productId': product.id,
         }),
       );
@@ -123,7 +155,9 @@ class CartService {
     });
   }
 
+  // ------------------------------------------------------------
   // UPDATE QUANTITY
+  // ------------------------------------------------------------
 
   Future<void> updateQuantity(
     String email,
@@ -139,6 +173,9 @@ class CartService {
         return;
       }
 
+      final token =
+          await _getToken();
+
       final uri = Uri.parse(
         '$baseUrl/cart/$productId',
       );
@@ -146,10 +183,12 @@ class CartService {
       final response = await http.put(
         uri,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+              'application/json',
+          'Authorization':
+              'Bearer $token',
         },
         body: jsonEncode({
-          'email': email,
           'quantity': quantity,
         }),
       );
@@ -164,7 +203,9 @@ class CartService {
     });
   }
 
+  // ------------------------------------------------------------
   // REMOVE PRODUCT
+  // ------------------------------------------------------------
 
   Future<void> removeProduct(
     String email,
@@ -182,15 +223,20 @@ class CartService {
     String email,
     int productId,
   ) async {
+    final token =
+        await _getToken();
+
     final uri = Uri.parse(
-      '$baseUrl/cart/$productId'
-      '?email=${Uri.encodeQueryComponent(email)}',
+      '$baseUrl/cart/$productId',
     );
 
     final response = await http.delete(
       uri,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':
+            'application/json',
+        'Authorization':
+            'Bearer $token',
       },
     );
 
@@ -203,21 +249,28 @@ class CartService {
     }
   }
 
+  // ------------------------------------------------------------
   // CLEAR CART
+  // ------------------------------------------------------------
 
   Future<void> clearCart(
     String email,
   ) {
     return _withLock(() async {
+      final token =
+          await _getToken();
+
       final uri = Uri.parse(
-        '$baseUrl/cart/'
-        '?email=${Uri.encodeQueryComponent(email)}',
+        '$baseUrl/cart/',
       );
 
       final response = await http.delete(
         uri,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+              'application/json',
+          'Authorization':
+              'Bearer $token',
         },
       );
 

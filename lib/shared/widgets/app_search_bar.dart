@@ -99,7 +99,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
               );
 
               final userName =
-                  snapshot.data ?? 'User (Hi)';
+                  snapshot.data ?? 'User (Logged Out)';
 
               return Padding(
                 padding: const EdgeInsets.symmetric(

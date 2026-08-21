@@ -3,16 +3,23 @@ import 'package:bcrypt/bcrypt.dart';
 import '../database/database.dart';
 import '../models/user.dart';
 import '../repositories/user_repository.dart';
+import 'jwt_service.dart';
+import '../models/auth_result.dart';
 
 class AuthService {
   final UserRepository _userRepository;
+  final JwtService _jwtService;
 
   AuthService({
     UserRepository? userRepository,
-  }) : _userRepository = userRepository ??
-            UserRepository(
-              database: DatabaseConnection.instance,
-            );
+    JwtService? jwtService,
+  })  : _userRepository =
+            userRepository ??
+                UserRepository(
+                  database: DatabaseConnection.instance,
+                ),
+        _jwtService =
+            jwtService ?? JwtService.instance;
 
   Future<User> register({
     required String name,
@@ -57,17 +64,22 @@ class AuthService {
     );
   }
 
-  Future<User> login({
+  Future<AuthResult> login({
     required String email,
     required String password,
   }) async {
-    final normalizedEmail = email.trim().toLowerCase();
+    final normalizedEmail =
+        email.trim().toLowerCase();
 
     final user =
-        await _userRepository.findByEmail(normalizedEmail);
+        await _userRepository.findByEmail(
+      normalizedEmail,
+    );
 
     if (user == null) {
-      throw Exception('Invalid email or password.');
+      throw Exception(
+        'Invalid email or password.',
+      );
     }
 
     final passwordValid = BCrypt.checkpw(
@@ -76,10 +88,27 @@ class AuthService {
     );
 
     if (!passwordValid) {
-      throw Exception('Invalid email or password.');
+      throw Exception(
+        'Invalid email or password.',
+      );
     }
 
-    return user;
+    if (user.id == null) {
+      throw Exception(
+        'User ID is missing.',
+      );
+    }
+
+    final token =
+        _jwtService.generateToken(
+      userId: user.id!,
+      email: user.email,
+    );
+
+    return AuthResult(
+      user: user,
+      token: token,
+    );
   }
 }
 

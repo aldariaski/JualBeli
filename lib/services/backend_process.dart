@@ -12,6 +12,10 @@ class BackendProcess {
 
   static bool _closing = false;
 
+  // UI listens to this to show the closing overlay.
+  static final ValueNotifier<bool> isClosing =
+      ValueNotifier<bool>(false);
+
   static const int backendPort = 8080;
 
   // ==============================================================
@@ -31,6 +35,8 @@ class BackendProcess {
 
     await windowManager.ensureInitialized();
 
+    await windowManager.setPreventClose(true);
+
     
     windowManager.addListener(
       _BackendWindowListener(),
@@ -46,11 +52,17 @@ class BackendProcess {
 
     print('[Backend] Flutter window is closing.');
 
+    isClosing.value = true;
+
+    // Allow the closing UI to render.
+    await Future<void>.delayed(
+      const Duration(milliseconds: 150),
+    );
+
     await stop();
 
     print('[Backend] Backend cleanup completed.');
 
-    // Allow the window to close now that cleanup is finished.
     await windowManager.setPreventClose(false);
 
     await windowManager.destroy();

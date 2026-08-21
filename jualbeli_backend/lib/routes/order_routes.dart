@@ -8,75 +8,55 @@ import '../repositories/order_repository.dart';
 class OrderRoutes {
   OrderRoutes._();
 
-  static final OrderRoutes instance = OrderRoutes._();
+  static final OrderRoutes instance =
+      OrderRoutes._();
 
-  final OrderRepository _repository = OrderRepository.instance;
+  final OrderRepository _repository =
+      OrderRepository.instance;
 
   Router get router {
     final router = Router();
 
-    // Existing checkout route
-    router.post('/', _createOrder);
-    router.get('/', _getOrders);
-    router.get('/<id|[0-9]+>', _getOrder);
+    router.post(
+      '/',
+      _createOrder,
+    );
+
+    router.get(
+      '/',
+      _getOrders,
+    );
+
+    router.get(
+      '/<id|[0-9]+>',
+      _getOrder,
+    );
 
     return router;
   }
+
+  // ------------------------------------------------------------
+  // CREATE ORDER / CHECKOUT
+  // ------------------------------------------------------------
 
   Future<Response> _createOrder(
     Request request,
   ) async {
     try {
-      final body =
-          await request.readAsString();
-
-      final data =
-          jsonDecode(body);
-
-      if (data is! Map<String, dynamic>) {
-        return Response(
-          400,
-          body: jsonEncode({
-            'error': 'Invalid request body.',
-          }),
-          headers: {
-            'Content-Type':
-                'application/json',
-          },
-        );
-      }
-
-      final email = data['email'];
-
-      if (email == null ||
-          email.toString().trim().isEmpty) {
-        return Response(
-          400,
-          body: jsonEncode({
-            'error': 'Email is required.',
-          }),
-          headers: {
-            'Content-Type':
-                'application/json',
-          },
-        );
-      }
+      final email =
+          request.context['userEmail'] as String;
 
       final orderId =
           await _repository.createOrder(
-        email: email.toString(),
+        email: email,
       );
 
-      return Response(
+      return _jsonResponse(
         201,
-        body: jsonEncode({
+        {
           'message':
               'Order created successfully.',
           'orderId': orderId,
-        }),
-        headers: {
-          'Content-Type':
-              'application/json',
         },
       );
     } catch (e) {
@@ -84,33 +64,32 @@ class OrderRoutes {
         'Create order error: $e',
       );
 
-      return Response(
+      return _jsonResponse(
         500,
-        body: jsonEncode({
+        {
           'error':
               'Failed to create order.',
           'details': e.toString(),
-        }),
-        headers: {
-          'Content-Type':
-              'application/json',
         },
       );
     }
   }
 
-  Future<Response> _getOrders(Request request) async {
+  // ------------------------------------------------------------
+  // GET ALL ORDERS
+  // ------------------------------------------------------------
+
+  Future<Response> _getOrders(
+    Request request,
+  ) async {
     try {
-      final email = request.url.queryParameters['email'];
+      final email =
+          request.context['userEmail'] as String;
 
-      if (email == null || email.trim().isEmpty) {
-        return _jsonResponse(
-          400,
-          {'error': 'Email is required.'},
-        );
-      }
-
-      final orders = await _repository.getOrdersForUser(email);
+      final orders =
+          await _repository.getOrdersForUser(
+        email,
+      );
 
       return _jsonResponse(
         200,
@@ -119,33 +98,35 @@ class OrderRoutes {
         },
       );
     } catch (e) {
-      print('Get orders error: $e');
+      print(
+        'Get orders error: $e',
+      );
 
       return _jsonResponse(
         500,
         {
-          'error': 'Failed to load orders.',
+          'error':
+              'Failed to load orders.',
           'details': e.toString(),
         },
       );
     }
   }
 
+  // ------------------------------------------------------------
+  // GET SINGLE ORDER
+  // ------------------------------------------------------------
+
   Future<Response> _getOrder(
     Request request,
     String id,
   ) async {
     try {
-      final email = request.url.queryParameters['email'];
+      final email =
+          request.context['userEmail'] as String;
 
-      if (email == null || email.trim().isEmpty) {
-        return _jsonResponse(
-          400,
-          {'error': 'Email is required.'},
-        );
-      }
-
-      final order = await _repository.getOrderForUser(
+      final order =
+          await _repository.getOrderForUser(
         orderId: int.parse(id),
         email: email,
       );
@@ -153,7 +134,9 @@ class OrderRoutes {
       if (order == null) {
         return _jsonResponse(
           404,
-          {'error': 'Order not found.'},
+          {
+            'error': 'Order not found.',
+          },
         );
       }
 
@@ -164,17 +147,24 @@ class OrderRoutes {
         },
       );
     } catch (e) {
-      print('Get order error: $e');
+      print(
+        'Get order error: $e',
+      );
 
       return _jsonResponse(
         500,
         {
-          'error': 'Failed to load order.',
+          'error':
+              'Failed to load order.',
           'details': e.toString(),
         },
       );
     }
   }
+
+  // ------------------------------------------------------------
+  // JSON RESPONSE
+  // ------------------------------------------------------------
 
   Response _jsonResponse(
     int statusCode,
@@ -184,7 +174,8 @@ class OrderRoutes {
       statusCode,
       body: jsonEncode(body),
       headers: {
-        'content-type': 'application/json',
+        'content-type':
+            'application/json',
       },
     );
   }

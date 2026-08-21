@@ -52,7 +52,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      context.go(AppRouter.home);
+      context.go(AppRouter.login);
     } catch (e) {
       if (!mounted) return;
 

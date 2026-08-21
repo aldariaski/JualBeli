@@ -4,6 +4,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../services/auth_service.dart';
+import '../middleware/auth_middleware.dart';
 
 class AuthRoutes {
   final AuthService _authService;
@@ -18,8 +19,31 @@ class AuthRoutes {
 
     router.post('/register', _register);
     router.post('/login', _login);
+    router.get(
+      '/me',
+      AuthMiddleware.middleware(_me),
+    );
 
     return router;
+  }
+
+  Future<Response> _me(
+    Request request,
+  ) async {
+    final userId =
+        request.context['userId'];
+
+    final email =
+        request.context['userEmail'];
+
+    return _jsonResponse(
+      200,
+      {
+        'message': 'Authenticated successfully.',
+        'userId': userId,
+        'email': email,
+      },
+    );
   }
 
   Future<Response> _register(
@@ -107,7 +131,7 @@ class AuthRoutes {
         );
       }
 
-      final user =
+      final result =
           await _authService.login(
         email: email,
         password: password,
@@ -117,10 +141,11 @@ class AuthRoutes {
         200,
         {
           'message': 'Login successful.',
+          'token': result.token,
           'user': {
-            'id': user.id,
-            'name': user.name,
-            'email': user.email,
+            'id': result.user.id,
+            'name': result.user.name,
+            'email': result.user.email,
           },
         },
       );

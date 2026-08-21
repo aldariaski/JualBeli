@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
 
       await AuthStorage.setLoggedIn(true);
 
-      await AuthStorage.saveUser( id: user['id'], name: user['name'], email: user['email'], );
+      await AuthStorage.saveUser( id: user['id'], name: user['name'], email: user['email'], token: response['token'], );
 
 
 

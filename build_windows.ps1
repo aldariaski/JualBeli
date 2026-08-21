@@ -44,10 +44,9 @@ Write-Host ""
 Push-Location $backendDir
 
 # uncomment to run
-# dart pub get
+#dart pub get
 
 #if ($LASTEXITCODE -ne 0) {
-    #Pop-Location
     #Write-Error "dart pub get failed."
     #exit 1
 #}

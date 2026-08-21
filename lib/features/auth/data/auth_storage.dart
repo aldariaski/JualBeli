@@ -6,18 +6,48 @@ class AuthStorage {
   static const String _userIdKey = 'user_id';
   static const String _userNameKey = 'user_name';
   static const String _userEmailKey = 'user_email';
+  static const String _tokenKey = 'auth_token';
 
   static Future<void> saveUser({
-    required int id,
-    required String name,
-    required String email,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
+  required int id,
+  required String name,
+  required String email,
+  required String token,
+    }) async {
+      final prefs =
+          await SharedPreferences.getInstance();
 
-    await prefs.setBool(_loggedInKey, true);
-    await prefs.setInt(_userIdKey, id);
-    await prefs.setString(_userNameKey, name);
-    await prefs.setString(_userEmailKey, email);
+      await prefs.setBool(
+        _loggedInKey,
+        true,
+      );
+
+      await prefs.setInt(
+        _userIdKey,
+        id,
+      );
+
+      await prefs.setString(
+        _userNameKey,
+        name,
+      );
+
+      await prefs.setString(
+        _userEmailKey,
+        email,
+      );
+
+      await prefs.setString(
+        _tokenKey,
+        token,
+      );
+    }
+
+  static Future<String?> getToken() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    return prefs.getString(_tokenKey);
   }
 
   static Future<void> setLoggedIn(bool value) async { 
@@ -50,12 +80,14 @@ class AuthStorage {
   }
 
   static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs =
+        await SharedPreferences.getInstance();
 
     await prefs.remove(_loggedInKey);
     await prefs.remove(_userIdKey);
     await prefs.remove(_userNameKey);
     await prefs.remove(_userEmailKey);
+    await prefs.remove(_tokenKey);
   }
 }
 

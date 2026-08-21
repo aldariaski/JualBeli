@@ -4,6 +4,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../services/cart_service.dart';
+import '../middleware/auth_middleware.dart';
 
 class CartRoutes {
   final CartService _service;
@@ -16,8 +17,15 @@ class CartRoutes {
   Router get router {
     final router = Router();
 
-    router.get('/', _getCart);
-    router.post('/', _addToCart);
+    router.get(
+      '/',
+      _getCart,
+    );
+
+    router.post(
+      '/',
+      _addToCart,
+    );
 
     router.put(
       '/<productId|[0-9]+>',
@@ -41,16 +49,7 @@ class CartRoutes {
     Request request,
   ) async {
     final email =
-        request.url.queryParameters['email'];
-
-    if (email == null || email.isEmpty) {
-      return _jsonResponse(
-        400,
-        {
-          'message': 'Email is required.',
-        },
-      );
-    }
+        request.context['userEmail'] as String;
 
     try {
       final items =
@@ -94,20 +93,19 @@ class CartRoutes {
         );
       }
 
-      final email = body['email'];
       final productId = body['productId'];
 
-      if (email is! String ||
-          email.isEmpty ||
-          productId is! int) {
+      if (productId is! int) {
         return _jsonResponse(
           400,
           {
-            'message':
-                'email and productId are required.',
+            'message': 'productId is required.',
           },
         );
       }
+
+      final email =
+          request.context['userEmail'] as String;
 
       await _service.addToCart(
         email,
@@ -153,20 +151,19 @@ class CartRoutes {
         );
       }
 
-      final email = body['email'];
       final quantity = body['quantity'];
 
-      if (email is! String ||
-          email.isEmpty ||
-          quantity is! int) {
+      if (quantity is! int) {
         return _jsonResponse(
           400,
           {
-            'message':
-                'email and quantity are required.',
+            'message': 'quantity is required.',
           },
         );
       }
+
+      final email =
+          request.context['userEmail'] as String;
 
       final id = int.tryParse(productId);
 
@@ -174,8 +171,7 @@ class CartRoutes {
         return _jsonResponse(
           400,
           {
-            'message':
-                'Invalid product ID.',
+            'message': 'Invalid product ID.',
           },
         );
       }
@@ -209,20 +205,11 @@ class CartRoutes {
   }
 
   Future<Response> _removeFromCart(
-    Request request,
-    String productId,
+  Request request,
+  String productId,
   ) async {
     final email =
-        request.url.queryParameters['email'];
-
-    if (email == null || email.isEmpty) {
-      return _jsonResponse(
-        400,
-        {
-          'message': 'Email is required.',
-        },
-      );
-    }
+        request.context['userEmail'] as String;
 
     try {
       final id = int.tryParse(productId);
@@ -269,7 +256,7 @@ class CartRoutes {
     Request request,
   ) async {
     final email =
-        request.url.queryParameters['email'];
+      request.context['userEmail'] as String;
 
     if (email == null || email.isEmpty) {
       return _jsonResponse(

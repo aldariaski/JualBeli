@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../auth/data/auth_storage.dart';
+
 class CheckoutService {
   CheckoutService._();
 
@@ -11,9 +13,33 @@ class CheckoutService {
   static const String baseUrl =
       'http://localhost:8080';
 
+  // ------------------------------------------------------------
+  // GET JWT TOKEN
+  // ------------------------------------------------------------
+
+  Future<String> _getToken() async {
+    final token =
+        await AuthStorage.getToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception(
+        'Authentication token not found.',
+      );
+    }
+
+    return token;
+  }
+
+  // ------------------------------------------------------------
+  // PLACE ORDER
+  // ------------------------------------------------------------
+
   Future<int> placeOrder({
-    required String email,
+    String? email,
   }) async {
+    final token =
+        await _getToken();
+
     final uri = Uri.parse(
       '$baseUrl/orders/',
     );
@@ -21,11 +47,12 @@ class CheckoutService {
     final response = await http.post(
       uri,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':
+            'application/json',
+        'Authorization':
+            'Bearer $token',
       },
-      body: jsonEncode({
-        'email': email,
-      }),
+      body: jsonEncode({}),
     );
 
     if (response.statusCode != 200 &&
@@ -46,7 +73,8 @@ class CheckoutService {
       );
     }
 
-    final orderId = data['orderId'];
+    final orderId =
+        data['orderId'];
 
     if (orderId == null) {
       throw Exception(

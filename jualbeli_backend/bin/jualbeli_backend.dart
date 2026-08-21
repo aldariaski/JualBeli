@@ -12,6 +12,7 @@ import 'package:jualbeli_backend/routes/auth_routes.dart';
 import 'package:jualbeli_backend/routes/product_routes.dart';
 import 'package:jualbeli_backend/routes/cart_routes.dart';
 import 'package:jualbeli_backend/routes/order_routes.dart';
+import 'package:jualbeli_backend/middleware/auth_middleware.dart';
 
 
 Future<void> main() async {
@@ -37,20 +38,26 @@ Future<void> main() async {
     '/auth/',
     AuthRoutes().router.call,
   );
-  
-   router.mount(
-    '/products/',
-    ProductRoutes().router.call,
-  );
 
   router.mount(
+    '/products/',
+    Pipeline()
+        .addMiddleware(AuthMiddleware.middleware)
+        .addHandler(ProductRoutes().router.call),
+  );
+  
+  router.mount(
     '/cart/',
-    CartRoutes().router.call,
+    Pipeline()
+        .addMiddleware(AuthMiddleware.middleware)
+        .addHandler(CartRoutes().router.call),
   );
 
   router.mount(
     '/orders/',
-    OrderRoutes.instance.router.call,
+    Pipeline()
+        .addMiddleware(AuthMiddleware.middleware)
+        .addHandler(OrderRoutes.instance.router.call),
   );
 
   final handler = const Pipeline()
