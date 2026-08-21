@@ -41,9 +41,7 @@ Future<void> main() async {
 
   router.mount(
     '/products/',
-    Pipeline()
-        .addMiddleware(AuthMiddleware.middleware)
-        .addHandler(ProductRoutes().router.call),
+    ProductRoutes().router.call,
   );
   
   router.mount(
